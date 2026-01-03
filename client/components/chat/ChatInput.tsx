@@ -51,3 +51,6 @@ export default function ChatInput({ input, isTyping, onInputChange, onSend }: Ch
 }
 
 
+
+
+

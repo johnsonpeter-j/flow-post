@@ -1,6 +1,6 @@
 'use client';
 
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 
 interface UnscheduledContentProps {
@@ -77,5 +77,8 @@ export default function UnscheduledContent({
     </div>
   );
 }
+
+
+
 
 

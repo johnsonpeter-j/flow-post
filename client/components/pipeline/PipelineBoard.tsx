@@ -1,7 +1,7 @@
 'use client';
 
 import PipelineColumn from './PipelineColumn';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 import type { StageConfig } from './types';
 import { stages } from './types';
@@ -37,5 +37,8 @@ export default function PipelineBoard({
     </div>
   );
 }
+
+
+
 
 

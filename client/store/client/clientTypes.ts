@@ -9,6 +9,11 @@ export interface Client {
   brandColor: string;
   createdAt: string;
   updatedAt: string;
+  briefStats?: {
+    total: number;
+    ready: number;
+    posted: number;
+  };
 }
 
 export interface CreateClientData {

@@ -8,17 +8,7 @@ export interface ContentItem {
   createdAt: string;
   scheduledFor: string | null;
   platforms: string[];
-  notes?: Array<{
-    id: string;
-    authorId: string;
-    text: string;
-    createdAt: string;
-  }>;
+  notes?: any[];
   postedAt?: string;
 }
-
-export interface ContentState {
-  contentBank: ContentItem[];
-}
-
 

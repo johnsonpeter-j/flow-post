@@ -12,17 +12,6 @@ import {
   addBriefNote,
 } from '@/store/briefs/briefsSlice';
 import {
-  setContentBank,
-  addContent,
-  addMultipleContent,
-  updateContent,
-  deleteContent,
-  updateContentStage,
-  scheduleContent,
-  markContentAsPosted,
-  addContentNote,
-} from '@/store/content/contentSlice';
-import {
   setTasks,
   addTask,
   updateTask,
@@ -32,7 +21,6 @@ import {
 } from '@/store/tasks/tasksSlice';
 import { setClients, addClient, updateClient, deleteClient, setSelectedClientId } from '@/store/app/appSlice';
 import type { Brief } from '@/components/clientsItem/types';
-import type { ContentItem } from '@/store/content/contentTypes';
 import type { Task } from '@/store/tasks/tasksTypes';
 import type { Client } from '@/components/clients/types';
 
@@ -41,7 +29,6 @@ export function useReduxData() {
   const dispatch = useAppDispatch();
   const { clients, departments, team, selectedClientId } = useAppSelector((state) => state.app);
   const { briefs, selectedBrief } = useAppSelector((state) => state.briefs);
-  const { contentBank } = useAppSelector((state) => state.content);
   const { tasks } = useAppSelector((state) => state.tasks);
 
   return {
@@ -52,7 +39,6 @@ export function useReduxData() {
     selectedClientId,
     briefs,
     selectedBrief,
-    contentBank,
     tasks,
 
     // Briefs actions
@@ -77,32 +63,6 @@ export function useReduxData() {
         createdAt: new Date().toISOString(),
       };
       dispatch(addBriefNote({ briefId, note: newNote }));
-    },
-
-    // Content actions
-    setContentBank: (content: ContentItem[] | ((prev: ContentItem[]) => ContentItem[])) => {
-      const state = store.getState();
-      if (typeof content === 'function') {
-        dispatch(setContentBank(content(state.content.contentBank)));
-      } else {
-        dispatch(setContentBank(content));
-      }
-    },
-    addContent: (content: ContentItem) => dispatch(addContent(content)),
-    addMultipleContent: (content: ContentItem[]) => dispatch(addMultipleContent(content)),
-    updateContent: (content: ContentItem) => dispatch(updateContent(content)),
-    deleteContent: (id: string) => dispatch(deleteContent(id)),
-    updateContentStage: (id: string, stage: string) => dispatch(updateContentStage({ id, stage })),
-    scheduleContent: (id: string, scheduledFor: string) => dispatch(scheduleContent({ id, scheduledFor })),
-    markContentAsPosted: (id: string, postedAt: string) => dispatch(markContentAsPosted({ id, postedAt })),
-    addContentNote: (contentId: string, note: { authorId: string; text: string }) => {
-      const newNote = {
-        id: `cn${Date.now()}`,
-        authorId: note.authorId,
-        text: note.text,
-        createdAt: new Date().toISOString(),
-      };
-      dispatch(addContentNote({ contentId, note: newNote }));
     },
 
     // Tasks actions

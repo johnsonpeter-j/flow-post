@@ -2,7 +2,7 @@
 
 import type { TeamMemberWithStats } from './types';
 import type { Task } from '@/store/tasks/tasksTypes';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 import type { TeamMember } from '@/data/mockData';
 import MemberDetailHeader from './MemberDetailHeader';
@@ -85,5 +85,8 @@ export default function MemberDetailView({
     </>
   );
 }
+
+
+
 
 

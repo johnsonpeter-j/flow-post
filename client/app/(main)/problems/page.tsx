@@ -22,11 +22,13 @@ import {
   WorkloadProblemItem,
 } from '@/components/problems';
 import type { ProblemTask, ProblemContent, ProblemBrief, ProblemMember } from '@/components/problems';
+import { mockContentBank } from '@/data/mockData';
 
 export default function ProblemsPage() {
   const router = useRouter();
-  const { clients, briefs, contentBank, tasks: mockTasks, team: mockTeam, updateTaskStatus, addTaskNote, addContentNote } =
+  const { clients, briefs, tasks: mockTasks, team: mockTeam, updateTaskStatus, addTaskNote } =
     useReduxData();
+  const contentBank = mockContentBank;
   const today = new Date('2025-01-17');
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
@@ -181,7 +183,7 @@ export default function ProblemsPage() {
 
   const handleAddContentNote = (contentId: string) => {
     if (!newNote.trim() || !noteAuthor) return;
-    addContentNote(contentId, { authorId: noteAuthor, text: newNote.trim() });
+    // Note: Content note functionality would need to be implemented with ideaBank store
     setNewNote('');
     setNoteAuthor('');
   };

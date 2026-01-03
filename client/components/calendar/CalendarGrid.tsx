@@ -2,7 +2,7 @@
 
 import CalendarDay from './CalendarDay';
 import type { CalendarDay as CalendarDayType, CalendarEvent } from './types';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 
 interface CalendarGridProps {
   days: CalendarDayType[];
@@ -70,5 +70,8 @@ export default function CalendarGrid({
     </div>
   );
 }
+
+
+
 
 

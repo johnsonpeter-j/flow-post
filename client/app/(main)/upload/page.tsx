@@ -16,7 +16,7 @@ import type { Brief } from '@/components/clientsItem/types';
 
 export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { clients, addBriefs, addMultipleContent } = useReduxData();
+  const { clients, addBriefs } = useReduxData();
 
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -98,7 +98,8 @@ export default function UploadPage() {
           createdAt: new Date().toISOString().split('T')[0],
           notes: [],
         }));
-        addMultipleContent(newContent);
+        // Content import functionality removed - using mock data now
+        // addMultipleContent(newContent);
       } else if (importType === 'briefs') {
         const newBriefs: Brief[] = mappedData.map((row, i) => ({
           id: `br_import_${Date.now()}_${i}`,

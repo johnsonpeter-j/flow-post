@@ -1,4 +1,4 @@
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Task } from '@/store/tasks/tasksTypes';
 
 export interface CalendarEvent {
@@ -17,5 +17,8 @@ export interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
 }
+
+
+
 
 

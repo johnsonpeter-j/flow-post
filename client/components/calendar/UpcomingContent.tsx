@@ -1,7 +1,7 @@
 'use client';
 
 import { GripVertical } from 'lucide-react';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 
 interface UpcomingContentProps {
@@ -77,5 +77,8 @@ export default function UpcomingContent({
     </div>
   );
 }
+
+
+
 
 

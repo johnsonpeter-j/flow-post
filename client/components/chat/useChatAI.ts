@@ -1,5 +1,5 @@
 import type { Message } from './types';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Task } from '@/store/tasks/tasksTypes';
 import type { Brief } from '@/components/clientsItem/types';
 import type { Client } from '@/components/clients/types';
@@ -78,5 +78,8 @@ export function generateAIResponse(
     suggestions: ['Pipeline', 'Calendar', 'Team', 'Analytics'],
   };
 }
+
+
+
 
 

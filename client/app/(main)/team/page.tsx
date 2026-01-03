@@ -20,10 +20,12 @@ import {
 import type { TeamMemberWithStats, TaskFilterStatus } from '@/components/team';
 import type { TeamMember, Department } from '@/data/mockData';
 import type { Task } from '@/store/tasks/tasksTypes';
+import { mockContentBank } from '@/data/mockData';
 
 export default function TeamPage() {
   const dispatch = useAppDispatch();
-  const { tasks, contentBank, clients, updateTaskStatus, addTaskNote } = useReduxData();
+  const { tasks, clients, updateTaskStatus, addTaskNote } = useReduxData();
+  const contentBank = mockContentBank;
   
   // Get departments and users from Redux store
   const { departments: apiDepartments, createDepartment: createDeptState } = useAppSelector(

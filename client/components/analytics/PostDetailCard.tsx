@@ -125,3 +125,6 @@ export default function PostDetailCard({ post, clients, onClose }: PostDetailCar
 }
 
 
+
+
+

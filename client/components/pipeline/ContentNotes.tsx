@@ -1,7 +1,7 @@
 'use client';
 
 import { MessageSquare, Send } from 'lucide-react';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { TeamMember } from '@/data/mockData';
 import { getMemberById, formatNoteTime } from './utils';
 
@@ -100,5 +100,8 @@ export default function ContentNotes({
     </div>
   );
 }
+
+
+
 
 

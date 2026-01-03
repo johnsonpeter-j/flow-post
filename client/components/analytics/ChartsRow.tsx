@@ -18,3 +18,6 @@ export default function ChartsRow({ weeklyData }: ChartsRowProps) {
 }
 
 
+
+
+

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useReduxData } from '@/hooks/useReduxData';
 import { MessagesList, ChatInput, generateAIResponse } from '@/components/chat';
 import type { Message } from '@/components/chat';
+import { mockContentBank } from '@/data/mockData';
 
 export default function ChatPage() {
   const router = useRouter();
-  const { contentBank, briefs, tasks, clients } = useReduxData();
+  const { briefs, tasks, clients } = useReduxData();
+  const contentBank = mockContentBank;
 
   const [messages, setMessages] = useState<Message[]>([
     {

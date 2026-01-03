@@ -152,3 +152,4 @@ const departmentSlice = createSlice({
 export const { clearSelectedDepartment, clearError, clearAllErrors } = departmentSlice.actions;
 export default departmentSlice.reducer;
 
+

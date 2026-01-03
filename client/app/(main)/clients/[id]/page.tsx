@@ -12,8 +12,13 @@ import ClientNotFound from '@/components/clientsItem/ClientNotFound';
 import type { TabType, Brief } from '@/components/clientsItem/types';
 import type { Client } from '@/components/clients/types';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { getClients } from '@/store/client/clientThunk';
+import { getClient } from '@/store/client/clientThunk';
+import { createContentBrief, getContentBriefs } from '@/store/contentBrief/contentBriefThunk';
+import { getIdeaBankItems } from '@/store/ideaBank/ideaBankThunk';
 import type { Client as ApiClient } from '@/store/client/clientTypes';
+import type { CreateContentBriefData } from '@/store/contentBrief/contentBriefTypes';
+import type { ContentBrief } from '@/store/contentBrief/contentBriefTypes';
+import type { IdeaBank } from '@/store/ideaBank/ideaBankTypes';
 import { mockBriefs, mockContentBank, mockDepartments, mockTeam } from '@/data/mockData';
 
 interface NewBrief {
@@ -47,37 +52,41 @@ export default function ClientDetailsPage() {
   const clientId = params.id as string;
   const filterRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
-  const { clients: apiClients, getClients: getClientsState } = useAppSelector((state) => state.client);
+  const { selectedClient, getClient: getClientState } = useAppSelector((state) => state.client);
+  const { createContentBrief: createBriefState, contentBriefs, getContentBriefs: getContentBriefsState } = useAppSelector((state) => state.contentBrief);
+  const { ideaBankItems, getIdeaBankItems: getIdeaBankItemsState } = useAppSelector((state) => state.ideaBank);
   
   // Use mock data as reference for briefs, contentBank, departments, and team (local state)
   const [allBriefs, setAllBriefs] = useState<Brief[]>(mockBriefs);
   const [allContentBank, setAllContentBank] = useState<ContentItem[]>(mockContentBank);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
-  // Fetch clients from API on mount if not already loaded
+  // Fetch current client from API on mount
   useEffect(() => {
-    if (apiClients.length === 0 && !getClientsState.isLoading) {
-      dispatch(getClients());
+    if (clientId && (!selectedClient || selectedClient._id !== clientId) && !getClientState.isLoading) {
+      dispatch(getClient(clientId));
     }
-  }, [dispatch, apiClients.length, getClientsState.isLoading]);
+  }, [dispatch, clientId, selectedClient, getClientState.isLoading]);
   
-  // Map API clients to component Client type
-  const clients: Client[] = useMemo(() => {
-    return apiClients.map((apiClient: ApiClient) => ({
-      id: apiClient._id,
-      name: apiClient.name,
-      industry: apiClient.businessType,
-      color: apiClient.brandColor || '#6B7280',
-      logo: apiClient.name
+  // Map API client to component Client type
+  const client: Client | undefined = useMemo(() => {
+    if (!selectedClient) return undefined;
+    return {
+      id: selectedClient._id,
+      name: selectedClient.name,
+      industry: selectedClient.businessType,
+      color: selectedClient.brandColor || '#6B7280',
+      logo: selectedClient.name
         .split(' ')
         .map((w) => w[0])
         .join('')
         .substring(0, 2)
         .toUpperCase(),
-      description: apiClient.description || '',
-      website: apiClient.website || '',
-      contact: apiClient.mail || '',
-    }));
-  }, [apiClients]);
+      description: selectedClient.description || '',
+      website: selectedClient.website || '',
+      contact: selectedClient.mail || '',
+    };
+  }, [selectedClient]);
   
   // Local state management functions
   const addBrief = (brief: Brief) => {
@@ -121,6 +130,75 @@ export default function ClientDetailsPage() {
   };
 
   const [activeTab, setActiveTab] = useState<TabType>('briefs');
+  
+  // Fetch data based on active tab
+  useEffect(() => {
+    if (!clientId) return;
+    
+    if (activeTab === 'briefs') {
+      // Fetch content briefs for this client
+      dispatch(getContentBriefs(clientId));
+    } else if (activeTab === 'content') {
+      // Fetch idea bank items for this client
+      dispatch(getIdeaBankItems(clientId));
+    }
+    // Calendar tab is left for now as per requirements
+  }, [dispatch, clientId, activeTab]);
+
+  // Map API content briefs to component Brief type and update local state
+  useEffect(() => {
+    if (activeTab === 'briefs' && contentBriefs.length > 0) {
+      const mappedBriefs: Brief[] = contentBriefs.map((brief: ContentBrief) => ({
+        id: brief._id,
+        clientId: brief.clientId._id,
+        concept: brief.concept || '',
+        explanation: brief.explanation || '',
+        mood: brief.mood || '',
+        moodTags: brief.moodTags || [],
+        references: brief.references || [],
+        contentType: brief.contentType || 'video',
+        category: brief.category || 'general',
+        teamsInvolved: Array.isArray(brief.teamsInvolved) 
+          ? brief.teamsInvolved.map((team: any) => typeof team === 'string' ? team : team._id || team.id)
+          : [],
+        music: {
+          type: brief.music?.type || 'none',
+          mood: brief.music?.mood || '',
+          reference: brief.music?.reference || '',
+        },
+        status: brief.status || 'pending',
+        currentStage: brief.currentStage,
+        notes: brief.notes?.map((note: any) => ({
+          id: note._id || `note-${Date.now()}`,
+          authorId: typeof note.authorId === 'string' ? note.authorId : note.authorId?._id || '',
+          text: note.text || '',
+          createdAt: note.createdAt || new Date().toISOString(),
+        })) || [],
+        createdAt: brief.createdAt,
+      }));
+      setAllBriefs(mappedBriefs);
+    }
+  }, [contentBriefs, activeTab]);
+
+  // Map API idea bank items to component ContentItem type and update local state
+  useEffect(() => {
+    if (activeTab === 'content' && ideaBankItems.length > 0) {
+      const mappedContent: ContentItem[] = ideaBankItems.map((item: IdeaBank) => ({
+        id: item._id,
+        clientId: item.clientId._id,
+        idea: item.idea || '',
+        type: item.type || 'photo',
+        stage: item.stage || 'idea',
+        priority: item.priority || 'medium',
+        createdAt: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        scheduledFor: item.scheduledFor || null,
+        platforms: item.platforms || [],
+        notes: [],
+      }));
+      setAllContentBank(mappedContent);
+    }
+  }, [ideaBankItems, activeTab]);
+
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [filterType, setFilterType] = useState('all');
@@ -139,8 +217,6 @@ export default function ClientDetailsPage() {
     music: { type: 'none', mood: '', reference: '' },
   });
 
-  // Find client by ID
-  const client = clients.find((c) => c.id === clientId);
   const clientBriefs = allBriefs.filter((b) => b.clientId === clientId);
   const clientContent = allContentBank.filter((c) => c.clientId === clientId);
 
@@ -162,30 +238,61 @@ export default function ClientDetailsPage() {
     return true;
   });
 
-  const saveBrief = () => {
-    if (!newBrief.concept || !client) return;
-    const brief: Brief = {
-      ...newBrief,
-      id: `br${Date.now()}`,
-      clientId: client.id,
-      status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0],
-      currentStage: undefined,
-      notes: [],
-    };
-    addBrief(brief);
-    setIsCreating(false);
-    setNewBrief({
-      concept: '',
-      explanation: '',
-      mood: '',
-      moodTags: [],
-      references: [],
-      contentType: 'video',
-      category: 'general',
-      teamsInvolved: [],
-      music: { type: 'none', mood: '', reference: '' },
-    });
+  const validateBriefForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!newBrief.concept.trim()) {
+      errors.concept = 'Concept is required';
+    }
+
+    if (!newBrief.contentType.trim()) {
+      errors.contentType = 'Content type is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const saveBrief = async () => {
+    setValidationErrors({});
+    
+    if (!validateBriefForm() || !client) {
+      return;
+    }
+
+    try {
+      const briefData: CreateContentBriefData = {
+        clientId: client.id,
+        concept: newBrief.concept.trim(),
+        explanation: newBrief.explanation.trim() || undefined,
+        mood: newBrief.mood.trim() || undefined,
+        moodTags: newBrief.moodTags.length > 0 ? newBrief.moodTags : undefined,
+        references: newBrief.references.length > 0 ? newBrief.references : undefined,
+        contentType: newBrief.contentType.trim(),
+        category: newBrief.category,
+        teamsInvolved: newBrief.teamsInvolved.length > 0 ? newBrief.teamsInvolved : undefined,
+        music: newBrief.music.type !== 'none' ? newBrief.music : undefined,
+        status: 'pending',
+      };
+
+      await dispatch(createContentBrief(briefData)).unwrap();
+      
+      setIsCreating(false);
+      setNewBrief({
+        concept: '',
+        explanation: '',
+        mood: '',
+        moodTags: [],
+        references: [],
+        contentType: 'video',
+        category: 'general',
+        teamsInvolved: [],
+        music: { type: 'none', mood: '', reference: '' },
+      });
+      setValidationErrors({});
+    } catch (error) {
+      console.error('Failed to create content brief:', error);
+    }
   };
 
   const handleAddBriefNote = (briefId: string, note: { authorId: string; text: string }) => {
@@ -242,12 +349,12 @@ export default function ClientDetailsPage() {
     scheduleContent(contentId, date);
   };
 
-  // Show nothing while clients are being fetched
-  if (getClientsState.isLoading) {
-    return null; // Could show a loading spinner here
+  // Show nothing while client is being fetched
+  if (getClientState.isLoading) {
+    return <div className="flex-1 flex items-center justify-center">Loading client...</div>;
   }
   
-  // Show not found only after clients have finished loading
+  // Show not found only after client has finished loading
   if (!client) {
     return <ClientNotFound />;
   }

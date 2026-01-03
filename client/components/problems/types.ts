@@ -1,4 +1,4 @@
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Task } from '@/store/tasks/tasksTypes';
 import type { Brief } from '@/components/clientsItem/types';
 import type { Client } from '@/components/clients/types';
@@ -36,5 +36,8 @@ export type ProblemType =
   | 'stalled-content'
   | 'workload-issues'
   | 'stalled-briefs';
+
+
+
 
 

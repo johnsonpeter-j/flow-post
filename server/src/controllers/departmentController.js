@@ -1,4 +1,5 @@
 const Department = require('../models/Department');
+const User = require('../models/User');
 
 // @desc    Get all departments
 // @route   GET /api/departments
@@ -13,6 +14,45 @@ exports.getDepartments = async (req, res, next) => {
       success: true,
       data: departments,
       count: departments.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all departments with users
+// @route   GET /api/departments/with-users
+// @access  Private
+exports.getDepartmentsWithUsers = async (req, res, next) => {
+  try {
+    const departments = await Department.find()
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Get users for each department
+    const departmentsWithUsers = await Promise.all(
+      departments.map(async (dept) => {
+        const users = await User.find({ departmentId: dept._id })
+          .select('_id name')
+          .sort({ name: 1 });
+
+        return {
+          _id: dept._id,
+          id: dept._id.toString(),
+          name: dept.name,
+          users: users.map((user) => ({
+            _id: user._id,
+            id: user._id.toString(),
+            name: user.name,
+          })),
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: departmentsWithUsers,
+      count: departmentsWithUsers.length,
     });
   } catch (error) {
     next(error);

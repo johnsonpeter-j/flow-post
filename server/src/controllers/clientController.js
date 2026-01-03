@@ -1,4 +1,6 @@
 const Client = require('../models/Client');
+const ContentBrief = require('../models/ContentBrief');
+const IdeaBank = require('../models/IdeaBank');
 
 // @desc    Get all clients
 // @route   GET /api/clients
@@ -31,9 +33,30 @@ exports.getClient = async (req, res, next) => {
       });
     }
 
+    // Get all brief content for this client
+    const contentBriefs = await ContentBrief.find({ clientId: req.params.id });
+    
+    // Get all idea bank items for this client
+    const ideaBankItems = await IdeaBank.find({ clientId: req.params.id });
+    
+    // Get counts for idea bank
+    const totalIdeaBankCount = ideaBankItems.length;
+    const publishedIdeaBankCount = ideaBankItems.filter((item) => item.stage === 'posted').length;
+
+    const totalBriefCount = contentBriefs.length;
+
     res.status(200).json({
       success: true,
       data: client,
+      briefStats: {
+        total: totalBriefCount,
+        ready: 0,
+        posted: 0,
+      },
+      ideaBankStats: {
+        total: totalIdeaBankCount,
+        published: publishedIdeaBankCount,
+      },
     });
   } catch (error) {
     next(error);

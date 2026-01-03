@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const {
   getDepartments,
+  getDepartmentsWithUsers,
   getDepartment,
   createDepartment,
   updateDepartment,
@@ -41,6 +42,7 @@ const updateDepartmentValidation = [
 router.use(verifyToken);
 
 // Routes
+router.get('/with-users', getDepartmentsWithUsers);
 router.get('/', getDepartments);
 router.get('/:id', getDepartment);
 router.post(

@@ -14,9 +14,11 @@ import {
   PlatformBreakdown,
 } from '@/components/analytics';
 import type { AnalyticsData, PostAnalytics, WeeklyData } from '@/components/analytics';
+import { mockContentBank } from '@/data/mockData';
 
 export default function AnalyticsPage() {
-  const { clients, contentBank } = useReduxData();
+  const { clients } = useReduxData();
+  const contentBank = mockContentBank;
   const [filterClient, setFilterClient] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<PostAnalytics | null>(null);
   const [timeRange, setTimeRange] = useState('7days');

@@ -2,7 +2,7 @@
 
 import { Plus } from 'lucide-react';
 import type { CalendarEvent, CalendarDay as CalendarDayType } from './types';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 
 interface CalendarDayProps {
   day: CalendarDayType;
@@ -93,5 +93,8 @@ export default function CalendarDay({
     </div>
   );
 }
+
+
+
 
 

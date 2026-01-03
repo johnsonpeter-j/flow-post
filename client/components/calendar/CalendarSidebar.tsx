@@ -2,7 +2,7 @@
 
 import UnscheduledContent from './UnscheduledContent';
 import UpcomingContent from './UpcomingContent';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 
 interface CalendarSidebarProps {
@@ -41,5 +41,8 @@ export default function CalendarSidebar({
     </div>
   );
 }
+
+
+
 
 

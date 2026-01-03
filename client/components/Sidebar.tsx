@@ -25,16 +25,16 @@ export default function Sidebar({ problemCount: propProblemCount }: SidebarProps
   const router = useRouter();
   
   // Calculate problem count from Redux store - use separate selectors to avoid creating new objects
-  const contentBank = useAppSelector((state) => state.content.contentBank);
+  const ideaBankItems = useAppSelector((state) => state.ideaBank.ideaBankItems);
   const tasks = useAppSelector((state) => state.tasks.tasks);
   const briefs = useAppSelector((state) => state.briefs.briefs);
 
   const today = new Date('2025-01-17');
   const calculatedProblemCount = (() => {
     const overdueTasks = tasks.filter((t) => new Date(t.deadline) < today && t.status !== 'done').length;
-    const missedPosts = contentBank.filter((c) => c.scheduledFor && c.stage !== 'posted' && new Date(c.scheduledFor) < today).length;
-    const urgentItems = contentBank.filter((c) => c.priority === 'urgent' && c.stage !== 'posted').length;
-    const pendingApprovals = contentBank.filter((c) => c.stage === 'approval').length;
+    const missedPosts = ideaBankItems.filter((c) => c.scheduledFor && c.stage !== 'posted' && new Date(c.scheduledFor) < today).length;
+    const urgentItems = ideaBankItems.filter((c) => c.priority === 'urgent' && c.stage !== 'posted').length;
+    const pendingApprovals = ideaBankItems.filter((c) => c.stage === 'approval').length;
     return overdueTasks + missedPosts + urgentItems + pendingApprovals;
   })();
 

@@ -1,7 +1,7 @@
 'use client';
 
 import PipelineCard from './PipelineCard';
-import type { ContentItem } from '@/store/content/contentTypes';
+import type { ContentItem } from '@/types/contentItem';
 import type { Client } from '@/components/clients/types';
 import type { StageConfig } from './types';
 

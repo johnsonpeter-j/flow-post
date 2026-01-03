@@ -62,13 +62,28 @@ export function LoginForm() {
     setError('');
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // For now, just redirect to main app
-      // In production, this would validate credentials
-      router.push('/clients');
+    try {
+      const response = await axiosInstance.post('/auth/signin', {
+        email,
+        password,
+      });
+
+      if (response.data.success && response.data.data.token) {
+        // Store token in localStorage
+        localStorage.setItem('token', response.data.data.token);
+        // Store user data if available
+        if (response.data.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        }
+        router.push('/clients');
+      } else {
+        setError('Login failed. Please try again.');
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to sign in. Please check your credentials.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

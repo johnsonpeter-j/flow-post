@@ -9,10 +9,25 @@ import {
   Toast,
 } from '@/components/calendar';
 import type { CalendarEvent, CalendarDayType, ToastType } from '@/components/calendar';
-import type { ContentItem } from '@/store/content/contentTypes';
+import { mockContentBank } from '@/data/mockData';
+
+interface ContentItem {
+  id: string;
+  clientId: string;
+  idea: string;
+  type: string;
+  stage: string;
+  priority: string;
+  createdAt: string;
+  scheduledFor: string | null;
+  platforms: string[];
+  notes?: any[];
+  postedAt?: string;
+}
 
 export default function CalendarPage() {
-  const { clients, contentBank, tasks, scheduleContent } = useReduxData();
+  const { clients, tasks } = useReduxData();
+  const contentBank = mockContentBank;
   const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1));
   const [draggedContent, setDraggedContent] = useState<ContentItem | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -125,7 +140,7 @@ export default function CalendarPage() {
     e.preventDefault();
     const dateStr = formatDateString(date);
     if (draggedContent) {
-      scheduleContent(draggedContent.id, dateStr);
+      // Note: Schedule functionality would need to be implemented with ideaBank store
       const client = clients.find((c) => c.id === draggedContent.clientId);
       setToast({
         message: `Scheduled "${draggedContent.idea}" for ${new Date(dateStr).toLocaleDateString(

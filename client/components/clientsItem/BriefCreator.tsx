@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { X, Check, Video, Camera, Layers, Play, Circle, Target, Zap, Flame, Globe, Link as LinkIcon, Plus } from 'lucide-react';
 import { moodOptions, contentTypes, musicTypes } from './constants';
-import { mockDepartments } from '@/data/mockData';
+import axiosInstance from '@/lib/axios';
 
 interface NewBrief {
   concept: string;
@@ -23,7 +24,38 @@ interface BriefCreatorProps {
   onCancel: () => void;
 }
 
+interface DepartmentWithUsers {
+  _id: string;
+  id: string;
+  name: string;
+  users: Array<{
+    _id: string;
+    id: string;
+    name: string;
+  }>;
+}
+
 export default function BriefCreator({ newBrief, onBriefChange, onSave, onCancel }: BriefCreatorProps) {
+  const [departments, setDepartments] = useState<DepartmentWithUsers[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setIsLoadingDepartments(true);
+        const response = await axiosInstance.get('/departments/with-users');
+        setDepartments(response.data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+        setDepartments([]);
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
   const toggleTeam = (deptId: string) => {
     onBriefChange({
       ...newBrief,
@@ -229,25 +261,38 @@ export default function BriefCreator({ newBrief, onBriefChange, onSave, onCancel
           <div className="form-group flex-1 flex flex-col gap-1.5">
             <label className="text-[0.75rem] font-semibold text-[#374151] uppercase tracking-wide">Teams Involved</label>
             <div className="teams-selector flex flex-wrap gap-2">
-              {mockDepartments.map((dept) => (
-                <button
-                  key={dept.id}
-                  className={`team-btn flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-[0.75rem] cursor-pointer transition-all ${
-                    newBrief.teamsInvolved.includes(dept.id)
-                      ? 'border-2'
-                      : 'bg-[#F9FAFB] border border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                  }`}
-                  style={
-                    newBrief.teamsInvolved.includes(dept.id)
-                      ? { borderColor: dept.color, background: `${dept.color}10`, color: dept.color }
-                      : {}
-                  }
-                  onClick={() => toggleTeam(dept.id)}
-                >
-                  {newBrief.teamsInvolved.includes(dept.id) && <Check size={12} style={{ color: dept.color }} />}
-                  <span>{dept.name}</span>
-                </button>
-              ))}
+              {isLoadingDepartments ? (
+                <div className="text-[0.75rem] text-[#6B7280]">Loading departments...</div>
+              ) : departments.length === 0 ? (
+                <div className="text-[0.75rem] text-[#6B7280]">No departments found</div>
+              ) : (
+                departments.map((dept) => {
+                  // Generate a consistent color based on department ID
+                  const colors = ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444'];
+                  const colorIndex = parseInt(dept._id.slice(-1), 16) % colors.length;
+                  const deptColor = colors[colorIndex];
+
+                  return (
+                    <button
+                      key={dept.id}
+                      className={`team-btn flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-[0.75rem] cursor-pointer transition-all ${
+                        newBrief.teamsInvolved.includes(dept.id)
+                          ? 'border-2'
+                          : 'bg-[#F9FAFB] border border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                      }`}
+                      style={
+                        newBrief.teamsInvolved.includes(dept.id)
+                          ? { borderColor: deptColor, background: `${deptColor}10`, color: deptColor }
+                          : {}
+                      }
+                      onClick={() => toggleTeam(dept.id)}
+                    >
+                      {newBrief.teamsInvolved.includes(dept.id) && <Check size={12} style={{ color: deptColor }} />}
+                      <span>{dept.name}</span>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -312,5 +357,6 @@ export default function BriefCreator({ newBrief, onBriefChange, onSave, onCancel
     </div>
   );
 }
+
 
 
