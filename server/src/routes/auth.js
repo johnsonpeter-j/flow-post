@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { signup, signin, forgotPassword, resetPassword, verifyToken: verifyTokenController } = require('../controllers/authController');
+const { signup, signin, forgotPassword, resetPassword, verifyToken: verifyTokenController, validateInvitation } = require('../controllers/authController');
 const validateRequest = require('../middleware/validateRequest');
 const { verifyToken, verifyTokenAndUser } = require('../middleware/auth');
 
@@ -71,6 +71,7 @@ router.post('/signup', signupValidation, validateRequest, signup);
 router.post('/signin', signinValidation, validateRequest, signin);
 router.post('/forgot-password', forgotPasswordValidation, validateRequest, forgotPassword);
 router.post('/reset-password', verifyToken, resetPasswordValidation, validateRequest, resetPassword);
+router.get('/validate-invitation', validateInvitation);
 router.get('/verify', verifyTokenAndUser, verifyTokenController);
 
 module.exports = router;

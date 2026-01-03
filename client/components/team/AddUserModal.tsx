@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Department } from '@/data/mockData';
 
@@ -9,15 +9,32 @@ interface AddUserModalProps {
   onClose: () => void;
   onAdd: (fullName: string, email: string, departmentId: string) => void;
   departments: Department[];
+  isLoading?: boolean;
+  apiError?: string | null;
 }
 
-export default function AddUserModal({ isOpen, onClose, onAdd, departments }: AddUserModalProps) {
+export default function AddUserModal({
+  isOpen,
+  onClose,
+  onAdd,
+  departments,
+  isLoading = false,
+  apiError = null,
+}: AddUserModalProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  if (!isOpen) return null;
+  // Reset form when modal closes after successful creation
+  useEffect(() => {
+    if (!isOpen && !isLoading) {
+      setFullName('');
+      setEmail('');
+      setDepartmentId('');
+      setValidationErrors({});
+    }
+  }, [isOpen, isLoading]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,11 +64,7 @@ export default function AddUserModal({ isOpen, onClose, onAdd, departments }: Ad
     }
 
     onAdd(fullName.trim(), email.trim(), departmentId);
-    setFullName('');
-    setEmail('');
-    setDepartmentId('');
-    setValidationErrors({});
-    onClose();
+    // Don't reset form or close modal here - let parent handle it after successful API call
   };
 
   const handleCancel = () => {
@@ -61,6 +74,8 @@ export default function AddUserModal({ isOpen, onClose, onAdd, departments }: Ad
     setValidationErrors({});
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -81,6 +96,11 @@ export default function AddUserModal({ isOpen, onClose, onAdd, departments }: Ad
           </button>
         </div>
         <div className="p-6 flex flex-col gap-4">
+          {apiError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{apiError}</p>
+            </div>
+          )}
           {Object.keys(validationErrors).length > 0 && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">
@@ -188,9 +208,9 @@ export default function AddUserModal({ isOpen, onClose, onAdd, departments }: Ad
           <button
             className="py-2.5 px-5 bg-[#111827] border-none rounded-lg text-[0.85rem] text-white cursor-pointer hover:bg-[#1F2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAdd}
-            disabled={!fullName.trim() || !email.trim() || !departmentId}
+            disabled={!fullName.trim() || !email.trim() || !departmentId || isLoading}
           >
-            Add
+            {isLoading ? 'Adding...' : 'Add'}
           </button>
         </div>
       </div>

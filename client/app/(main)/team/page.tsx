@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useReduxData } from '@/hooks/useReduxData';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { getDepartments, createDepartment } from '@/store/department/departmentThunk';
+import { getUsers, createUser } from '@/store/user/userThunk';
+import { clearError as clearDepartmentError } from '@/store/department/departmentSlice';
+import { clearError as clearUserError } from '@/store/user/userSlice';
+import type { Department as ApiDepartment } from '@/store/department/departmentTypes';
+import type { User as ApiUser } from '@/store/user/userTypes';
 import {
   TeamHeader,
   AddDepartmentModal,
@@ -11,20 +18,71 @@ import {
   NoSelectionView,
 } from '@/components/team';
 import type { TeamMemberWithStats, TaskFilterStatus } from '@/components/team';
-import type { TeamMember } from '@/data/mockData';
+import type { TeamMember, Department } from '@/data/mockData';
 import type { Task } from '@/store/tasks/tasksTypes';
 
 export default function TeamPage() {
-  const { team, departments, tasks, contentBank, clients, updateTaskStatus, addTaskNote } =
-    useReduxData();
+  const dispatch = useAppDispatch();
+  const { tasks, contentBank, clients, updateTaskStatus, addTaskNote } = useReduxData();
+  
+  // Get departments and users from Redux store
+  const { departments: apiDepartments, createDepartment: createDeptState } = useAppSelector(
+    (state) => state.department
+  );
+  const { users: apiUsers, createUser: createUserState } = useAppSelector((state) => state.user);
+  
+  // Map API departments to component Department format
+  const departments: Department[] = useMemo(() => {
+    return apiDepartments.map((dept: ApiDepartment) => ({
+      id: dept._id,
+      name: dept.name,
+      icon: 'folder', // Default icon, can be enhanced later
+      color: '#6366F1', // Default color, can be enhanced later
+    }));
+  }, [apiDepartments]);
+  
+  // Map API users to component TeamMember format
+  const team: TeamMember[] = useMemo(() => {
+    return apiUsers.map((user: ApiUser) => {
+      const nameParts = user.name.split(' ');
+      const avatar = nameParts
+        .map((part) => part[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+      
+      return {
+        id: user._id,
+        name: user.name,
+        role: '', // Role not in API, can be added later
+        departmentId: user.departmentId?._id || '',
+        avatar,
+        color: '#6366F1', // Default color, can be enhanced later
+      };
+    });
+  }, [apiUsers]);
+  
   const [selectedMember, setSelectedMember] = useState<TeamMemberWithStats | null>(null);
   const [filterStatus, setFilterStatus] = useState<TaskFilterStatus>('all');
-  const [expandedDepts, setExpandedDepts] = useState<string[]>(departments.map((d) => d.id));
+  const [expandedDepts, setExpandedDepts] = useState<string[]>([]);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
   const [noteAuthor, setNoteAuthor] = useState('');
   const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  
+  // Update expanded departments when departments change
+  useEffect(() => {
+    if (departments.length > 0 && expandedDepts.length === 0) {
+      setExpandedDepts(departments.map((d) => d.id));
+    }
+  }, [departments, expandedDepts.length]);
+  
+  // Fetch departments and users on mount
+  useEffect(() => {
+    dispatch(getDepartments());
+    dispatch(getUsers());
+  }, [dispatch]);
 
   const today = new Date('2025-01-17');
 
@@ -112,18 +170,39 @@ export default function TeamPage() {
     }
   };
 
-  const handleAddDepartment = (name: string, description: string) => {
-    // TODO: Call API to add department
-    console.log('Adding department:', { name, description });
-    // For now, just close the modal
-    setIsDepartmentModalOpen(false);
+  const handleAddDepartment = async (name: string, description: string) => {
+    try {
+      await dispatch(
+        createDepartment({
+          name,
+          description: description || undefined,
+        })
+      ).unwrap();
+      
+      // Close modal on success
+      setIsDepartmentModalOpen(false);
+    } catch (error) {
+      // Error is handled in Redux state and will be shown in modal
+      console.error('Failed to create department:', error);
+    }
   };
 
-  const handleAddUser = (fullName: string, email: string, departmentId: string) => {
-    // TODO: Call API to add user
-    console.log('Adding user:', { fullName, email, departmentId });
-    // For now, just close the modal
-    setIsUserModalOpen(false);
+  const handleAddUser = async (fullName: string, email: string, departmentId: string) => {
+    try {
+      await dispatch(
+        createUser({
+          name: fullName,
+          email,
+          departmentId: departmentId || undefined,
+        })
+      ).unwrap();
+      
+      // Close modal on success
+      setIsUserModalOpen(false);
+    } catch (error) {
+      // Error is handled in Redux state and will be shown in modal
+      console.error('Failed to create user:', error);
+    }
   };
 
   return (
@@ -136,15 +215,25 @@ export default function TeamPage() {
 
       <AddDepartmentModal
         isOpen={isDepartmentModalOpen}
-        onClose={() => setIsDepartmentModalOpen(false)}
+        onClose={() => {
+          setIsDepartmentModalOpen(false);
+          dispatch(clearDepartmentError('createDepartment'));
+        }}
         onAdd={handleAddDepartment}
+        isLoading={createDeptState.isLoading}
+        apiError={createDeptState.error}
       />
 
       <AddUserModal
         isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
+        onClose={() => {
+          setIsUserModalOpen(false);
+          dispatch(clearUserError('createUser'));
+        }}
         onAdd={handleAddUser}
         departments={departments}
+        isLoading={createUserState.isLoading}
+        apiError={createUserState.error}
       />
 
       <div className="team-layout flex-1 flex overflow-hidden">

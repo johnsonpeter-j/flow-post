@@ -5,6 +5,8 @@ import briefsReducer from './briefs/briefsSlice';
 import contentReducer from './content/contentSlice';
 import tasksReducer from './tasks/tasksSlice';
 import appReducer from './app/appSlice';
+import departmentReducer from './department/departmentSlice';
+import userReducer from './user/userSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +16,8 @@ export const store = configureStore({
     content: contentReducer,
     tasks: tasksReducer,
     app: appReducer,
+    department: departmentReducer,
+    user: userReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

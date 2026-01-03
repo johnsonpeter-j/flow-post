@@ -1,28 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface AddDepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (name: string, description: string) => void;
+  isLoading?: boolean;
+  apiError?: string | null;
 }
 
-export default function AddDepartmentModal({ isOpen, onClose, onAdd }: AddDepartmentModalProps) {
+export default function AddDepartmentModal({
+  isOpen,
+  onClose,
+  onAdd,
+  isLoading = false,
+  apiError = null,
+}: AddDepartmentModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  if (!isOpen) return null;
-
-  const handleAdd = () => {
-    if (name.trim()) {
-      onAdd(name.trim(), description.trim());
+  // Reset form when modal closes after successful creation
+  useEffect(() => {
+    if (!isOpen && !isLoading) {
       setName('');
       setDescription('');
-      onClose();
+    }
+  }, [isOpen, isLoading]);
+
+  const handleAdd = () => {
+    if (name.trim() && !isLoading) {
+      onAdd(name.trim(), description.trim());
+      // Don't close modal here - let parent handle it after successful API call
     }
   };
+
+  if (!isOpen) return null;
 
   const handleCancel = () => {
     setName('');
@@ -49,6 +63,11 @@ export default function AddDepartmentModal({ isOpen, onClose, onAdd }: AddDepart
           </button>
         </div>
         <div className="p-6 flex flex-col gap-4">
+          {apiError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{apiError}</p>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-[0.75rem] font-semibold text-[#374151] uppercase tracking-wide">
               Department Name *
@@ -84,9 +103,9 @@ export default function AddDepartmentModal({ isOpen, onClose, onAdd }: AddDepart
           <button
             className="py-2.5 px-5 bg-[#111827] border-none rounded-lg text-[0.85rem] text-white cursor-pointer hover:bg-[#1F2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAdd}
-            disabled={!name.trim()}
+            disabled={!name.trim() || isLoading}
           >
-            Add
+            {isLoading ? 'Adding...' : 'Add'}
           </button>
         </div>
       </div>

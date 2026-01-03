@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, ArrowRight, Sparkles, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import axiosInstance from '@/lib/axios';
 
 export function BrandingPanel() {
   return (
@@ -52,6 +53,7 @@ export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -98,7 +100,7 @@ export function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
                 placeholder="you@example.com"
               />
             </div>
@@ -122,13 +124,20 @@ export function LoginForm() {
               </div>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
                 placeholder="Enter your password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -166,12 +175,48 @@ export function LoginForm() {
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(false);
   const [error, setError] = useState('');
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [showTokenErrorModal, setShowTokenErrorModal] = useState(false);
+
+  // Validate token and auto-fill user data on mount
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token) return;
+
+      setIsValidatingToken(true);
+      try {
+        const response = await axiosInstance.get('/auth/validate-invitation', {
+          params: { token },
+        });
+
+        if (response.data.success && response.data.data.user) {
+          const user = response.data.data.user;
+          setName(user.name || '');
+          setEmail(user.email || '');
+        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.error || 'Invalid or expired invitation token';
+        setTokenError(errorMessage);
+        setShowTokenErrorModal(true);
+      } finally {
+        setIsValidatingToken(false);
+      }
+    };
+
+    validateToken();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,19 +234,94 @@ export function SignupForm() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      router.push('/clients');
+    try {
+      const signupData: any = {
+        password,
+        confirmPassword,
+      };
+
+      // Include token if present
+      if (token) {
+        signupData.token = token;
+        // Include name and email if provided (user can update them)
+        if (name.trim()) {
+          signupData.name = name.trim();
+        }
+        if (email.trim()) {
+          signupData.email = email.trim();
+        }
+      } else {
+        // Regular signup requires name and email
+        if (!name.trim() || !email.trim()) {
+          setError('Name and email are required');
+          setIsLoading(false);
+          return;
+        }
+        signupData.name = name.trim();
+        signupData.email = email.trim();
+      }
+
+      const response = await axiosInstance.post('/auth/signup', signupData);
+
+      if (response.data.success) {
+        // Store token if provided
+        if (response.data.data.token) {
+          localStorage.setItem('token', response.data.data.token);
+        }
+        router.push('/clients');
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to create account. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
     <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
+      {/* Token Error Modal */}
+      {showTokenErrorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-2xl w-[90%] max-w-[500px] p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Invalid Invitation</h3>
+              <button
+                onClick={() => {
+                  setShowTokenErrorModal(false);
+                  router.push('/signup');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">{tokenError}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowTokenErrorModal(false);
+                  router.push('/signup');
+                }}
+                className="px-4 py-2 bg-[#111827] text-white rounded-lg hover:bg-[#1F2937] transition-colors"
+              >
+                Continue to Signup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h1>
           <p className="text-gray-600">Sign up to get started with FlowPost</p>
         </div>
+
+        {isValidatingToken && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-600">Validating invitation...</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
@@ -219,8 +339,9 @@ export function SignupForm() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-              className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+              required={!token}
+              disabled={!!token}
+              className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600"
               placeholder="John Doe"
             />
           </div>
@@ -238,8 +359,9 @@ export function SignupForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                required={!token}
+                disabled={!!token}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600"
                 placeholder="you@example.com"
               />
             </div>
@@ -255,14 +377,21 @@ export function SignupForm() {
               </div>
               <input
                 id="signup-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
-                placeholder="At least 8 characters"
+                minLength={6}
+                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
+                placeholder="At least 6 characters"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -276,13 +405,20 @@ export function SignupForm() {
               </div>
               <input
                 id="confirm-password"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
                 placeholder="Confirm your password"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -394,7 +530,7 @@ export function ForgotPasswordForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
                 placeholder="you@example.com"
               />
             </div>
@@ -436,6 +572,8 @@ export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -448,8 +586,8 @@ export function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -486,14 +624,21 @@ export function ResetPasswordForm() {
               </div>
               <input
                 id="reset-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
-                placeholder="At least 8 characters"
+                minLength={6}
+                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
+                placeholder="At least 6 characters"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -507,13 +652,20 @@ export function ResetPasswordForm() {
               </div>
               <input
                 id="reset-confirm-password"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all placeholder:text-gray-400 text-gray-900"
                 placeholder="Confirm your new password"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

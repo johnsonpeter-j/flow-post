@@ -304,6 +304,65 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
+// @desc    Verify invitation token and get user data
+// @route   GET /api/auth/validate-invitation
+// @access  Public
+exports.validateInvitation = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token is required',
+      });
+    }
+
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const userId = decoded.userId;
+
+      // Find the invited user
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'Invalid invitation token',
+        });
+      }
+
+      // Check if user already has a password (already joined)
+      if (user.password) {
+        return res.status(400).json({
+          success: false,
+          error: 'User has already completed registration',
+        });
+      }
+
+      // Return user data for auto-filling the form
+      res.status(200).json({
+        success: true,
+        data: {
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+          },
+        },
+      });
+    } catch (tokenError) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired invitation token',
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Verify token and get current user
 // @route   GET /api/auth/verify
 // @access  Private (requires valid JWT token)

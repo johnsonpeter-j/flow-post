@@ -1,3 +1,5 @@
+'use client';
+
 import { BrandingPanel, SignupForm } from '@/components/signin';
 
 export default function SignupPage() {
